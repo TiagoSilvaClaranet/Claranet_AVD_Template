@@ -1,0 +1,35 @@
+name: Deploy_Governance
+
+trigger: none
+
+variables:
+  - group: avd-terraform-vars
+  - name: tf_version
+    value: '1.6.6'
+
+stages:
+  - stage: Governance
+    displayName: "Fase 4 - Governança"
+    dependsOn: []
+    jobs:
+      - job: Terraform_Governance
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - task: TerraformInstaller@1
+            inputs:
+              terraformVersion: '$(tf_version)'
+          - task: AzureCLI@2
+            inputs:
+              azureSubscription: 'AzureRM'
+              scriptType: 'pscore'
+              scriptLocation: 'inlineScript'
+              workingDirectory: '$(Build.SourcesDirectory)/governance'
+              inlineScript: |
+                terraform init -upgrade -reconfigure
+                terraform apply -auto-approve -var-file="terraform.tfvars"
+            env:
+              ARM_CLIENT_ID: $(servicePrincipalId)
+              ARM_CLIENT_SECRET: $(servicePrincipalKey)
+              ARM_SUBSCRIPTION_ID: $(subscriptionId)
+              ARM_TENANT_ID: $(tenantId)
